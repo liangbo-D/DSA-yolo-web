@@ -2,11 +2,8 @@
 from flask import Flask, request, jsonify
 from ultralytics import YOLO
 import os
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
-
 model = YOLO("best.pt")  # 载入模型文件
 
 @app.route('/')
@@ -28,8 +25,6 @@ def predict():
     detections = results[0].boxes.xyxy.cpu().tolist()
     return jsonify({"detections": detections})
 
-
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5000))  # Render 会自动设置 PORT 变量
     app.run(host='0.0.0.0', port=port)
