@@ -24,3 +24,7 @@ def predict():
     results = model.predict(source=input_path, imgsz=640)
     detections = results[0].boxes.xyxy.cpu().tolist()
     return jsonify({"detections": detections})
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))  # Render 会自动设置 PORT 变量
+    app.run(host='0.0.0.0', port=port)
