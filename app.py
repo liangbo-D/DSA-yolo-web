@@ -1,15 +1,12 @@
-from flask import Flask, request, send_file, jsonify
-from ultralytics import YOLO
+from flask import Flask, request, Response, jsonify, send_file
+from predict import run_predict
 import os
 import uuid
-import shutil
 from flask_cors import CORS
+import json
 
 app = Flask(__name__)
 CORS(app)
-
-# 加载模型
-model = YOLO("best.pt")
 
 @app.route('/')
 def home():
@@ -27,15 +24,11 @@ def predict():
     input_path = f"input_{uid}{ext}"
     file.save(input_path)
 
-    # 运行推理
-    results = model.predict(source=input_path, imgsz=640, save=True)
+    # 运行推理并获取输出文件路径
+    results, output_path = run_predict(input_path)
     pred = results[0]
 
-    # 获取预测图像或视频文件路径
-    output_path = pred.save_dir / pred.path.name
-    output_path = str(output_path)
-
-    # 提取检测框信息
+    # 提取检测框数据
     boxes = pred.boxes.xyxy.cpu().tolist() if pred.boxes else []
     confs = pred.boxes.conf.cpu().tolist() if pred.boxes else []
     clss = pred.boxes.cls.cpu().tolist() if pred.boxes else []
@@ -45,21 +38,14 @@ def predict():
         for box, conf, cls in zip(boxes, confs, clss)
     ]
 
-    # 设置 MIME 类型
-    if ext in ['.mp4', '.avi', '.mov']:
-        mimetype = 'video/mp4'
-    else:
-        mimetype = 'image/jpeg'
+    # 返回视频或图像文件
+    mimetype = 'video/mp4' if ext in ['.mp4', '.avi', '.mov'] else 'image/jpeg'
 
-    # 将 detections 作为 JSON 编码在自定义响应头中返回
-    from flask import Response
-    f = open(output_path, 'rb')
-    data = f.read()
-    f.close()
+    with open(output_path, 'rb') as f:
+        data = f.read()
 
-    from json import dumps
     resp = Response(data, mimetype=mimetype)
-    resp.headers['X-Detections'] = dumps(detections)
+    resp.headers['X-Detections'] = json.dumps(detections)
     return resp
 
 if __name__ == '__main__':
