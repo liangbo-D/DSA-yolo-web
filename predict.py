@@ -14,15 +14,13 @@ def run_predict(input_path='input.jpg'):
         device='cpu'        # Render 上默认用 CPU
     )
 
-    # 获取输出文件路径（图片或视频）
-    output_path = str(results[0].save_dir / results[0].path.name)
-
-    # 如果你还想在控制台打印路径
-    print("✅ 模型输出文件：", output_path)
-
+    # 获取输出文件路径
+    pred = results[0]
+    output_path = str(pred.save_dir / pred.path.name)
     return results, output_path
 
 
 if __name__ == '__main__':
     input_path = sys.argv[1] if len(sys.argv) > 1 else 'input.jpg'
-    run_predict(input_path)
+    results, output_path = run_predict(input_path)
+    print(f"预测输出文件路径: {output_path}")
