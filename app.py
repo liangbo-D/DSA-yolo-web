@@ -1,29 +1,27 @@
 # app.py
 from flask import Flask, request, jsonify
-from ultralytics import YOLO
+from predict import run_predict
 import os
 
 app = Flask(__name__)
-model = YOLO("best.pt")  # 载入模型文件
 
 @app.route('/')
 def home():
-    return "✅ YOLO Flask API 已启动"
+    return "✅ YOLO API 正在运行"
 
 @app.route('/predict', methods=['POST'])
 def predict():
     file = request.files.get('file')
-    if file is None:
-        return jsonify({"error": "请上传文件"}), 400
+    if not file:
+        return jsonify({'error': '请上传图像文件'}), 400
 
-    temp_path = 'temp_input'
-    os.makedirs(temp_path, exist_ok=True)
-    input_path = os.path.join(temp_path, file.filename)
-    file.save(input_path)
+    save_path = 'input.jpg'
+    file.save(save_path)
 
-    results = model.predict(source=input_path, imgsz=640)
-    detections = results[0].boxes.xyxy.cpu().tolist()
-    return jsonify({"detections": detections})
+    results = run_predict(save_path)
+    boxes = results[0].boxes.xyxy.cpu().tolist()
+    return jsonify({'detections': boxes})
+
 os.environ['YOLO_CONFIG_DIR'] = '/tmp'
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render 会自动设置 PORT 变量
